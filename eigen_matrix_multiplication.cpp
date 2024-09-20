@@ -1,27 +1,24 @@
-#include <iostream>
-using namespace std;
-
+#include <chrono>
+#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <random>
 
+using namespace std;
+using std::chrono::duration;
+using std::chrono::duration_cast;
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
+
+typedef Eigen::MatrixXd Mat;
 /**
- * Fills the square matrix of dimension SIZExSIZE of random values between -10 and 10 included
+ * Fills the square matrix of dimension SIZExSIZE of random values between -10
+ * and 10 included
  * @param matrix one dimensional pointer to the matrix
  * @param SIZE size of the matrix
  */
-void fill_matrix(double *matrix, const size_t SIZE) {
-	//We could make the random number generator global to avoid creating it multiple times
-	//...but it's not worth the hastle
-	random_device rd;       //Setup of number generator
-	mt19937 gen(rd());
-	uniform_real_distribution<> double_dist(-10.0, 10.0);
-
-
-	for (size_t i = 0; i < SIZE; i++) {
-		for (size_t j = 0; j < SIZE; j++) {
-			matrix[i * SIZE + j] = double_dist(gen);  // Filling the array with random doubles
-		}
-	}
+Mat fill_matrix(const size_t SIZE) {
+  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(SIZE, SIZE);
+  return mat;
 }
 
 /**
@@ -30,64 +27,48 @@ void fill_matrix(double *matrix, const size_t SIZE) {
  * @param matrix2
  * @param SIZE
  */
-double *mul_matrix(const double* matrix1, const double* matrix2, const size_t SIZE) {
+Mat mul_matrix(Mat mat1, Mat mat2) { return mat1 * mat2; }
 
-	auto *result = static_cast<double *>(malloc(sizeof(double) * SIZE * SIZE));
+void print_matrix(Mat mat1) { std::cout << mat1 << std::endl; }
 
+int main(int argc, char *argv[]) {
+  int SIZE;
+  bool AUTO_MODE = argc != 3;
+  int iteration;
+  if (AUTO_MODE) {
+    iteration = 10;
+    SIZE = 2;
+  } else {
+    SIZE = stoi(argv[1]); // Parses parameter, throws exception if not int
+    iteration = stoi(argv[2]);
+  }
 
-	for (size_t i = 0; i < SIZE; i++) {
-		for (size_t j = 0; j < SIZE; j++) {
-			for (size_t k = 0; k < SIZE; k++) {
-				result[i * SIZE + j] += matrix1[i * SIZE + k] * matrix2[k * SIZE + j];
-			}
-		}
-	}
+  // Fills matrices
+  Mat m1 = fill_matrix(SIZE);
+  Mat m2 = fill_matrix(SIZE);
 
-	return result;
-}
+  // matrix multiplication
+  double mean_time = 0;
+  std::vector<double> times;
+  for (int i = 0; i < iteration; i++) {
+    auto t1 = high_resolution_clock::now();
+    Mat result = mul_matrix(m1, m2);
+    auto t2 = high_resolution_clock::now();
+    /* Getting number of milliseconds as a double. */
+    duration<double, std::milli> ms_double = t2 - t1;
+    mean_time += ms_double.count();
+    times.push_back(ms_double.count());
+  }
+  mean_time /= iteration * 1.;
+  double stand_dev = 0.;
+  for (size_t i = 0; i < times.size(); i++) {
+    stand_dev +=
+        (times[i] - mean_time) * (times[i] - mean_time) / times.size() * 1.0;
+  }
 
-void print_matrix(const double* matrix, size_t SIZE) {
-	for (size_t i = 0; i < SIZE; i++) {
-		for (size_t j = 0; j < SIZE; j++) {
-			std::cout << matrix[i * SIZE + j] << " ";
-		}
-		std::cout << std::endl;
-	}
-}
+  stand_dev = sqrt(stand_dev);
+  std::cout << "Mean=" << mean_time << "ms ; Standard Deviation=" << stand_dev
+            << "ms" << std::endl;
 
-int main(const int argc, string argv[]) {
-	int SIZE;
-	bool AUTO_MODE = argc != 2;
-	if (AUTO_MODE) {
-		SIZE = 2;
-		//perror("Usage: \"./program N\", with N being the size of the matrixes");
-	} else {
-		SIZE = stoi(argv[1]); //Parses parameter, throws exception if not int
-	}
-
-	double *m1;
-	double *m2;
-
-	//Fills the matrixes with numbers from 1 to 4 and 5 to 8, like in the GitHub example
-	if(AUTO_MODE) {
-		m1 = static_cast<double *>(malloc(sizeof(double) * 4 ));
-		m2 = static_cast<double *>(malloc(sizeof(double) * 4 ));
-		for (size_t i = 0; i < 4; i++) {
-			m1[i] = i+1;
-			m2[i] = i+4+1;
-		}
-	} else {
-		m1 = static_cast<double *>(malloc(sizeof(double) * SIZE * SIZE));
-		m2 = static_cast<double *>(malloc(sizeof(double) * SIZE * SIZE));
-		fill_matrix(m1, SIZE);
-		fill_matrix(m2, SIZE);
-	}
-
-	//print_matrix(m1, SIZE);
-	//print_matrix(m2, SIZE);
-
-	double *result = mul_matrix(m1, m2, SIZE);
-
-	print_matrix(result, SIZE);
-
+  return 0;
 }
