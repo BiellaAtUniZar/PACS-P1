@@ -1,25 +1,21 @@
 #include <iostream>
-using namespace std;
-
-#include <iostream>
 #include <random>
-
+#include <vector>
+#include <assert.h>
+using namespace std;
+typedef std::vector<std::vector<double>> Mat;
+typedef std::vector<double> Row;
 /**
  * Fills the square matrix of dimension SIZExSIZE of random values between -10 and 10 included
  * @param matrix one dimensional pointer to the matrix
- * @param SIZE size of the matrix
  */
-void fill_matrix(double *matrix, const size_t SIZE) {
-	//We could make the random number generator global to avoid creating it multiple times
-	//...but it's not worth the hastle
+void fill_matrix(Mat &matrix) {
 	random_device rd;       //Setup of number generator
 	mt19937 gen(rd());
 	uniform_real_distribution<> double_dist(-10.0, 10.0);
-
-
-	for (size_t i = 0; i < SIZE; i++) {
-		for (size_t j = 0; j < SIZE; j++) {
-			matrix[i * SIZE + j] = double_dist(gen);  // Filling the array with random doubles
+	for (size_t i = 0; i < matrix.size(); i++) {
+		for (size_t j = 0; j < matrix[0].size(); j++) {
+			matrix[i][j] = double_dist(gen);  // Filling the array with random doubles
 		}
 	}
 }
@@ -28,66 +24,55 @@ void fill_matrix(double *matrix, const size_t SIZE) {
  * Performs multiplication and returns address of resulting matrix
  * @param matrix1
  * @param matrix2
- * @param SIZE
  */
-double *mul_matrix(const double* matrix1, const double* matrix2, const size_t SIZE) {
-
-	auto *result = static_cast<double *>(malloc(sizeof(double) * SIZE * SIZE));
-
-
-	for (size_t i = 0; i < SIZE; i++) {
-		for (size_t j = 0; j < SIZE; j++) {
-			for (size_t k = 0; k < SIZE; k++) {
-				result[i * SIZE + j] += matrix1[i * SIZE + k] * matrix2[k * SIZE + j];
+	void mul_matrix(const Mat &matrix1, const Mat &matrix2, Mat &result) {
+	//Assuming NxN matrices
+	assert(matrix1.size()==matrix2.size());
+	assert(matrix1[0].size()==matrix2[0].size());
+	assert(matrix1[0].size()==matrix1.size());
+	assert(matrix2[0].size()==matrix2.size());
+	for (size_t i = 0; i < matrix1.size(); i++) {
+		for (size_t j = 0; j < matrix1.size(); j++) {
+			for (size_t k = 0; k < matrix1.size(); k++) {
+			result[i][j]+=matrix1[i][k]*matrix2[k][j];
 			}
 		}
 	}
-
-	return result;
 }
 
-void print_matrix(const double* matrix, size_t SIZE) {
-	for (size_t i = 0; i < SIZE; i++) {
-		for (size_t j = 0; j < SIZE; j++) {
-			std::cout << matrix[i * SIZE + j] << " ";
+void print_matrix(const Mat &matrix) {
+	for (size_t i = 0; i < matrix.size(); i++) {
+		for (size_t j = 0; j < matrix[0].size(); j++) {
+			std::cout << matrix[i][j] << " ";
 		}
 		std::cout << std::endl;
 	}
 }
 
-int main(const int argc, string argv[]) {
+int main(int argc, char * argv[]) {
 	int SIZE;
 	bool AUTO_MODE = argc != 2;
 	if (AUTO_MODE) {
 		SIZE = 2;
-		//perror("Usage: \"./program N\", with N being the size of the matrixes");
 	} else {
 		SIZE = stoi(argv[1]); //Parses parameter, throws exception if not int
 	}
 
-	double *m1;
-	double *m2;
+	//initialize matrices
+	Mat m1 (SIZE, Row(SIZE,0.) );
+	Mat m2 (SIZE, Row(SIZE,0.) );
+	Mat result (SIZE, Row(SIZE,0.) );
 
-	//Fills the matrixes with numbers from 1 to 4 and 5 to 8, like in the GitHub example
-	if(AUTO_MODE) {
-		m1 = static_cast<double *>(malloc(sizeof(double) * 4 ));
-		m2 = static_cast<double *>(malloc(sizeof(double) * 4 ));
-		for (size_t i = 0; i < 4; i++) {
-			m1[i] = i+1;
-			m2[i] = i+4+1;
-		}
-	} else {
-		m1 = static_cast<double *>(malloc(sizeof(double) * SIZE * SIZE));
-		m2 = static_cast<double *>(malloc(sizeof(double) * SIZE * SIZE));
-		fill_matrix(m1, SIZE);
-		fill_matrix(m2, SIZE);
-	}
-
-	//print_matrix(m1, SIZE);
-	//print_matrix(m2, SIZE);
-
-	double *result = mul_matrix(m1, m2, SIZE);
-
-	print_matrix(result, SIZE);
-
+	//Fills matrices 
+	fill_matrix(m1);
+	fill_matrix(m2);
+	std::cout<<"Mat1="<<std::endl;
+	print_matrix(m1);
+	std::cout<<"Mat2="<<std::endl;
+	print_matrix(m2);
+	//matrix multiplication 
+	mul_matrix(m1, m2, result);
+	std::cout<<"Result="<<std::endl;
+	print_matrix(result);
+	return 0;
 }
