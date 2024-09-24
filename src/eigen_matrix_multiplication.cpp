@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
   int iteration;
   if (AUTO_MODE) {
     iteration = 10;
-    SIZE = 2;
+    SIZE = 10;
   } else {
     SIZE = stoi(argv[1]); // Parses parameter, throws exception if not int
     iteration = stoi(argv[2]);
