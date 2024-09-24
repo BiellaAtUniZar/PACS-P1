@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(lab1)
-
+#set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 find_package (Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 add_executable(standar_multi src/standard_matrix_multiplication.cpp)
